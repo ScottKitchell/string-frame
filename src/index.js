@@ -1,21 +1,46 @@
 import "./styles.css"
-import { component, App, Box, Heading, Text, Link } from "./string-frame"
+import {
+  start,
+  component,
+  App,
+  Box,
+  Heading,
+  Text,
+  Image,
+  Link,
+  run
+} from "./string-frame"
 import { styled } from "./string-frame/style"
 import { Info } from "./info-panel"
 
-const BlueBox = styled(Box)`
-  background-color: ${"error-color"};
-  color: ${"warn-color"};
-  padding: 20px 30px;
-`
+const TREES_IMAGE =
+  "https://i.pinimg.com/originals/be/28/16/be2816908ad816411ab84c2ccecf9ec6.jpg"
 
-const Bold = styled(Text)`
-  font-weight: bold;
-`
+const BlueBox = styled(Box, {
+  style: `
+    background-color: #336699;
+    color: white;
+    padding: 20px 30px;
+  `
+})
 
-const H1 = component((props, children) => {
-  const style = `font-weight: bold;`
-  return Heading({ level: 1, style, ...props })(["1. ", children])
+const TreesImage = styled(Image, { source: TREES_IMAGE, width: "300" })
+
+const Bold = styled(Text, { style: `font-weight: bold;` })
+
+// const Bold = component((props, children) => {
+//   console.log("Bold children:", children)
+//   return Text({ style: [`font-weight: bold;`, props.style], name: "Text" })(
+//     children
+//   )
+// })
+
+const H1 = styled(Heading, {
+  level: 1,
+  style: `
+    font-weight: bold;
+    color: #ff33ff;
+  `
 })
 
 const theme = {
@@ -28,10 +53,10 @@ const theme = {
   }
 }
 
-App({ theme })([
+const app = App({ theme })(
   Heading({ level: 1 })("string-frame!"),
   BlueBox()(
-    Text()([
+    Text()(
       "We use Parcel to bundle this sandbox, you can find more info about Parcel ",
       Link({
         url: "https://parceljs.org",
@@ -40,9 +65,12 @@ App({ theme })([
         style: "color: inherit"
       })("here"),
       "."
-    ])
+    )
   ),
   H1({ level: 2 })("Scott Kitchell"),
+  TreesImage()(),
   Bold({ style: "color:red; font-size:20;" })("And more red text here."),
   Info({ title: "Info Panel" })("hi there")
-])
+)
+
+start(app)

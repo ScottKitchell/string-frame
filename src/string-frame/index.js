@@ -1,40 +1,80 @@
 /** string-frame */
 
-import { forceString } from "./utils"
+import {
+  isFunction,
+  isArray,
+  isString,
+  deepClone,
+  expandProps,
+  escapeHtml
+} from "./utils"
 
-export const component = render => (props = {}) => children => {
-  const childrenString = forceString(children)
-  const rendered = render(props, childrenString)
-  return forceString(rendered)
+export const start = app => app()
+
+const childrenToString = (children, context) => {
+  if (!children) return ""
+  if (isString(children)) return children
+  if (isFunction(children)) {
+    return childrenToString(children(context))
+  }
+  if (isArray(children)) {
+    return children.map(child => childrenToString(child, context)).join("")
+  }
+  return children
 }
 
-const expandProps = (props, mappings = {}) => {
-  props.style = forceString(props.style, ";")
-  return Object.entries(props)
-    .map(([key, value]) => `${mappings[key] || key}="${value}"`)
-    .join(" ")
+/**
+ * component takes props, and then children and returns a string, a component,
+ * or an array of string/components/arrays.
+ * @param {*} render
+ */
+export const component = render => (props = {}) => (...children) => context => {
+  return render(props, children, context)
 }
+
+export const Info = component(({ title, ...props }, children) => {
+  return Box()(Text(props)(title), children)
+})
+
+const primativeComponentFactory = (htmlTag, propsMapping) =>
+  component(htmlAsChildren(htmlTag, propsMapping))
+
+const htmlAsChildren = (htmlTag, propsMapping) => (
+  props,
+  children,
+  context
+) => [
+  `<${htmlTag} ${expandProps(props, children, context, propsMapping)}>`,
+  children,
+  `</${htmlTag}>`
+]
 
 // Primative components
 export const App = component((props, children) => {
-  window.theme = props.theme
-  document.getElementById(props.id || "app").innerHTML = children
+  const context = { theme: props.theme }
+  let _children = childrenToString(children, context)
+  _children = `<div style="padding:5px;background-color:#ddd"><code>${escapeHtml(
+    _children
+  )}</code></div>
+  ${_children}
+  `
+  document.getElementById(props.id || "app").innerHTML = _children
 })
 
-export const Box = component((props, children) => {
-  return `<div ${expandProps(props)}>${children}</div>`
+export const Box = primativeComponentFactory("div")
+
+export const Text = component(({ inline, ...props }, children, context) => {
+  const htmlTag = inline ? "span" : "p"
+  return htmlAsChildren(htmlTag)(props, children, context)
 })
 
-export const Text = component((props, children) => {
-  return `<span ${expandProps(props)}>${children}</span>`
+export const Heading = component((props, children, context) => {
+  const htmlTag = `h${props.level}`
+  return htmlAsChildren(htmlTag)(props, children, context)
 })
 
-export const Heading = component((props, children) => {
-  const h = `h${props.level}`
-  return `<${h} ${expandProps(props)}>${children}</${h}>`
-})
+const linkPropsMapping = { url: "href" }
+export const Link = primativeComponentFactory("a", linkPropsMapping)
 
-export const Link = component((props, children) => {
-  const propsMapping = { url: "href" }
-  return `<a ${expandProps(props, propsMapping)}>${children}</a>`
-})
+const imagePropsMapping = { source: "src" }
+export const Image = primativeComponentFactory("img", imagePropsMapping)
